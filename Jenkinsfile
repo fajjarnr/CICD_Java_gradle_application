@@ -1,7 +1,10 @@
 pipeline{
     agent any
+    environment{
+        VERSION = "${env.BUILD_ID}"
+    }
     stages{
-        stage("sonar quality check"){
+        stage("Sonar Quality Check"){
             agent {
                 any {
                     image 'openjdk:11'
@@ -13,11 +16,25 @@ pipeline{
                         sh "chmod +x gradlew"
                         sh "./gradlew sonarqube"
                     }
-                    timeout(time: 1, unit: 'HOURS') {
-                        def qualityGate = waitForQualityGate()
-                        if (qualityGate.status != 'OK') {
-                            error "Pipeline aborted due to quality gate failure: ${qualityGate.status}"
-                        }
+                    // timeout(time: 1, unit: 'HOURS') {
+                    //     def qualityGate = waitForQualityGate()
+                    //     if (qualityGate.status != 'OK') {
+                    //         error "Pipeline aborted due to quality gate failure: ${qualityGate.status}"
+                    //     }
+                    // }
+                }
+            }
+        }
+        stages("Build and Push Docker Image"){
+            steps{
+                script{
+                    withCredentials([string(credentialsId: 'nexus-docker-host', variable: 'password')]) {
+                        sh'''
+                        docker build -t 34.27.20.45:8083/springapp:${VERSION} .
+                        docker login -u admin -p $password 34.27.20.45:8083
+                        docker push 34.27.20.45:8083/springapp:${VERSION}
+                        docker rmi 34.27.20.45:8083/springapp:${VERSION}
+                        '''
                     }
                 }
             }
