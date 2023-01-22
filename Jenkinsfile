@@ -25,7 +25,7 @@ pipeline{
                 }
             }
         }
-        stages("Build and Push Docker Image"){
+        stage("Build and Push Docker Image"){
             steps{
                 script{
                     withCredentials([string(credentialsId: 'nexus-docker-host', variable: 'password')]) {
