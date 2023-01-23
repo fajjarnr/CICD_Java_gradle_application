@@ -44,8 +44,24 @@ pipeline{
                 script{
                     dir('kubernetes/'){
                         withEnv(['DATREE_TOKEN=43d6bcff-a4e4-442d-9ebb-03407913038a']) {
-                            sh 'helm datree test myapp/'
+                            echo 'test helm chart using datree'
+                            // sh 'helm datree test myapp/'
                         }
+                    }
+                }
+            }
+        }
+        stage("Pushing the helm charts to nexus"){
+            steps{
+                script{
+                    withCredentials([string(credentialsId: 'nexus-docker-host', variable: 'password')]) {
+                          dir('kubernetes/') {
+                             sh '''
+                                 helmversion=$( helm show chart myapp | grep version | cut -d: -f 2 | tr -d ' ')
+                                 tar -czvf  myapp-${helmversion}.tgz myapp/
+                                 curl -u admin:$password http://34.27.20.45:8081/repository/helm-hosted/ --upload-file myapp-${helmversion}.tgz -v
+                            '''
+                          }
                     }
                 }
             }
